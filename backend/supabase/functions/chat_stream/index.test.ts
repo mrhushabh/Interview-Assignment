@@ -1,5 +1,4 @@
-/// <reference path="../deno.d.ts" />
-
+// @ts-ignore: deno.d.ts is for IDE only, Deno has built-in types
 import { assertEquals, assertExists } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 
 
