@@ -41,6 +41,7 @@ This creates the tables:
 - `chat_sessions` - Chat conversations
 - `chat_messages` - Individual messages
 - `memories` - Summarized memories
+- `prompt_versions` - Versioned system prompts (seeded with a default prompt)
 
 ### 3. Set Environment Variables
 
@@ -148,6 +149,39 @@ cd backend/supabase/functions/chat_stream
 deno test --allow-net index.test.ts
 ```
 
+## Prompt Versioning
+
+System prompts are stored in the `prompt_versions` table instead of being hardcoded. The `chat_stream` function fetches the active prompt before each Gemini call.
+
+**Change the AI's behavior without redeploying:**
+
+```sql
+-- Deactivate current prompt
+UPDATE prompt_versions SET is_active = false WHERE is_active = true;
+
+-- Add a new version
+INSERT INTO prompt_versions (version, name, content, is_active) VALUES (
+  2, 'Casual companion v2',
+  'You are NeverGone, a friendly AI buddy. Be casual and brief.',
+  true
+);
+```
+
+A unique partial index ensures only one prompt can be active at a time.
+
+## Admin Dashboard
+
+Open `admin.html` in your browser for a local admin UI:
+
+```bash
+open admin.html
+```
+
+Connect with your Supabase **service role key** (from `supabase status`). The dashboard lets you:
+- View all users, sessions, and memories
+- Create and switch prompt versions
+- See overview stats
+
 ## Database Schema
 
 ```
@@ -161,9 +195,9 @@ deno test --allow-net index.test.ts
 └────────┬────────┘
          │
          ▼
-┌─────────────────┐
-│  chat_sessions  │
-└────────┬────────┘
+┌─────────────────┐     ┌───────────────────┐
+│  chat_sessions  │     │ prompt_versions   │
+└────────┬────────┘     └───────────────────┘
          │
          ▼
 ┌─────────────────┐     ┌─────────────────┐
