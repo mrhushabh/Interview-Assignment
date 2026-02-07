@@ -1,213 +1,193 @@
 # NeverGone Take‑Home Assignment
 
-This repository is a **starter shell** for the NeverGone take‑home assignment.  
-You will fork this repo, implement your solution, and submit **a link to your public GitHub repository**.
-
-Please read this README fully before starting.
+A complete demo of NeverGone featuring a SwiftUI iOS app, Supabase backend with Edge Functions and Postgres, real-time streaming via SSE, email/password authentication, and long-term memory capture.
 
 ---
 
-## Goal
-
-Build a **small but complete demo** of NeverGone that runs **locally** and demonstrates:
-
-- A **SwiftUI iOS app**
-- A **Supabase backend** (Edge Functions + Postgres)
-- **Streaming chat**
-- **Auth + persistence**
-- **Basic long‑term memory capture**
-
-We care about **engineering judgment, correctness, and clarity** — not polish.
-
-⏱️ **Expected time:** 4–6 hours
-
----
-
-## What You Will Deliver
-
-- A forked GitHub repo containing:
-  - SwiftUI iOS app
-  - Supabase backend (Edge Functions + migrations)
-- Clear setup instructions
-- Clean commit history
-- A working local demo
-
-You will submit **only a GitHub repo link**.
-
----
-
-## Repository Structure (Recommended)
-
-You may adjust this if needed, but keep things understandable.
+## Repository Structure
 
 ```
 nevergone-takehome/
-├── ios/                     # SwiftUI app
-│   ├── NeverGoneDemo.xcodeproj
+├── ios/
+│   ├── NeverGoneDemo/
+│   │   └── NeverGoneDemo/
+│   │       ├── App/                  # App entry point
+│   │       ├── Models/               # Data structures
+│   │       ├── ViewModels/           # Business logic
+│   │       ├── Views/                # UI screens
+│   │       └── Services/             # Supabase client
+│   ├── NeverGoneDemoTests/           # XCTests
 │   └── README.md
 ├── backend/
 │   ├── supabase/
 │   │   ├── functions/
-│   │   │   ├── chat_stream/
-│   │   │   └── summarize_memory/
-│   │   └── migrations/
+│   │   │   ├── chat_stream/          # Streaming chat endpoint
+│   │   │   └── summarize_memory/     # Memory summarization
+│   │   ├── migrations/               # Database schema
+│   │   └── config.toml               # Supabase config
 │   └── README.md
-└── README.md                # this file
+└── README.md
 ```
-
----
-
-## Core Requirements
-
-### iOS App (SwiftUI)
-
-Your app must:
-
-- Use **Supabase email/password auth**
-- Allow creating and listing chat sessions
-- Include a chat screen that:
-  - sends user messages
-  - renders **streaming assistant responses**
-  - allows cancelling an in‑progress stream
-- Use a **view‑model driven** architecture
-- Use **Swift Concurrency (`async/await`)**
-
-UI can be simple — focus on correctness.
-
----
-
-### Backend (Supabase)
-
-Implement two **Supabase Edge Functions**:
-
-#### `chat_stream`
-- Accepts: `session_id`, `message`
-- Persists the user message
-- Streams an assistant response (SSE or chunked text)
-- Persists the assistant message when complete
-
-#### `summarize_memory`
-- Accepts: `session_id`
-- Produces a short summary
-- Inserts into a `memories` table
-
-You may:
-- Stub the LLM
-- Fake responses
-- Use a real provider (optional)
-
-Architecture matters more than model quality.
-
----
-
-### Database
-
-You should include migrations for:
-
-- `profiles`
-- `chat_sessions`
-- `chat_messages`
-- `memories`
-
-Requirements:
-- Row Level Security (RLS) enabled
-- Users may only access their own data
-- No hard‑coded user IDs
-
----
-
-### Streaming Requirements
-
-- Must use **true streaming** (SSE or chunked response)
-- Client must render text progressively
-- Cancelling the stream must stop backend work
-
-Polling is **not acceptable**.
-
----
-
-### Tests (Minimal)
-
-- **iOS:** at least one XCTest (e.g., streaming logic via a mocked stream)
-- **Backend:** at least one Deno test for a helper or utility
-
-Tests can be small — they must be real.
 
 ---
 
 ## Running Locally
 
-You **must** update this README with working local instructions.
+### Prerequisites
+
+- **macOS** with Xcode 15.0+
+- **Docker Desktop** (for local Supabase)
+- **Supabase CLI**: `brew install supabase/tap/supabase`
+- **Gemini API Key**: [Get from Google AI Studio](https://makersuite.google.com/app/apikey)
 
 ### Backend
 
 ```bash
 cd backend
+
+# Start Supabase (Docker must be running)
 supabase start
+
+# Apply database migrations
 supabase db reset
-supabase functions serve
+
+# Create .env file with your Gemini API key
+echo "GEMINI_API_KEY=your_key_here" > .env
+
+# Start Edge Functions (keep this terminal open)
+supabase functions serve --env-file .env --no-verify-jwt
 ```
 
-Explain:
-- how auth is handled locally
-- any environment variables required
+**Auth locally:** Email confirmation is disabled in `config.toml`.
+
+**Environment variables:** The only required variable is `GEMINI_API_KEY` in the `backend/.env` file. Supabase automatically provides `SUPABASE_URL` and `SUPABASE_ANON_KEY` to Edge Functions.
 
 ### iOS
 
-Explain:
-- how to configure Supabase URL + anon key
-- how to run the app in Simulator
-- how to sign up a test user
-- how to trigger a streaming response
+**Configure Supabase URL + anon key:** Open `App/NeverGoneDemoApp.swift` and verify the URL and key match your local Supabase instance. The defaults work for all local setups:
+
+```swift
+let supabaseURL = "http://127.0.0.1:54321"
+let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+Get your anon key with `cd backend && supabase status`.
+
+**Run the app in Simulator:**
+
+1. Open Xcode → create project named `NeverGoneDemo`
+2. Add Supabase Swift package: `https://github.com/supabase/supabase-swift`
+3. Add source files from `ios/NeverGoneDemo/NeverGoneDemo/`
+4. Select an iPhone simulator and press ⌘R
+
+**Sign up a test user:** Launch the app, enter any email (e.g. `test@example.com`) and password (min 6 chars), tap Sign Up. You're logged in immediately.
+
+**Trigger a streaming response:** Create a new chat session with the + button, type a message, tap send. The AI response streams in word by word. Tap the red stop button to cancel mid-stream.
 
 ---
 
-## Optional Extensions (Pick Up to 2)
+## What's Included
 
-You do **not** need to complete these.
+### iOS App (SwiftUI)
 
-- Prompt versioning
-- pgvector memory retrieval (stub embeddings allowed)
-- Offline‑safe send queue
-- Proper JWT verification (no `--no-verify-jwt`)
-- Simple admin UI (SwiftUI or web)
+- Supabase email/password auth (sign up, sign in, sign out)
+- Create and list chat sessions
+- Chat screen with streaming assistant responses
+- Cancel in-progress stream with stop button
+- Memory summarization via brain icon
+- MVVM architecture with Swift Concurrency (`async/await`)
 
----
+### Backend (Supabase Edge Functions)
 
-## What We’re Evaluating
+- **`chat_stream`** — Accepts `session_id` and `message`, persists the user message, streams a Gemini response via SSE, persists the assistant message when complete
+- **`summarize_memory`** — Accepts `session_id`, fetches all messages, generates a summary via Gemini, saves to `memories` table
 
-- Correctness and reliability
-- Async and streaming reasoning
-- Data modeling and RLS usage
-- Code clarity and structure
-- Ability to explain tradeoffs
+### Database (Postgres with RLS)
 
-### Red Flags
+- `profiles` — User profiles, auto-created on signup
+- `chat_sessions` — Chat conversations with user ownership
+- `chat_messages` — Individual messages with role constraint
+- `memories` — AI-generated conversation summaries
 
-- No real streaming
-- No RLS or broken RLS
-- Hard‑coded secrets
-- Over‑engineering
-- Cannot run locally
+All tables have Row Level Security enabled. Users can only access their own data via `auth.uid()`.
 
----
+### Tests
 
-## Submission
-
-When finished:
-
-1. Push all changes to your fork
-2. Ensure the repo is **public**
-3. Send us **only the GitHub link**
-
-Do **not** deploy anything publicly.
+- **iOS:** XCTests for streaming text accumulation, SSE parsing, role encoding, cancel behavior
+- **Backend:** Deno tests for SSE format, request validation, Gemini format conversion, UUID validation
 
 ---
 
-## Notes
+## Streaming Chat Flow
 
-- Ask questions if something is unclear
-- Make reasonable assumptions and document them
-- If you run out of time, explain what you would do next
+```
+1. User types message in ChatView
+         │
+         ▼
+2. ChatViewModel.sendMessage()
+   - Adds message to UI optimistically
+   - Calls streamResponse()
+         │
+         ▼
+3. POST /functions/v1/chat_stream
+   - Saves user message to DB
+   - Calls Gemini API with streaming
+         │
+         ▼
+4. SSE stream back to iOS
+   data: {"content": "Hello"}
+   data: {"content": " world"}
+         │
+         ▼
+5. ChatViewModel parses SSE
+   - Updates @Published streamingText
+   - UI re-renders progressively
+         │
+         ▼
+6. Stream completes
+   - Full message saved to DB
+   - Added to messages array
+```
 
-Good luck — we’re excited to see how you think.
+---
+
+## Design Decisions & Tradeoffs
+
+**SSE vs WebSockets** — Chose SSE because chat responses are one-way (server → client). Simpler than WebSockets, easy cancellation via HTTP abort, sufficient for this use case.
+
+**Optimistic UI** — User messages appear immediately before server confirmation for better perceived performance. Slight chance of UI/DB mismatch, acceptable for a demo.
+
+**RLS at database level** — Row Level Security enforced in Postgres rather than application code. Defense in depth, single source of truth for access control, works with any client.
+
+---
+
+## Running Tests
+
+### Backend (Deno)
+
+```bash
+cd backend/supabase/functions/chat_stream
+deno test --no-check --allow-net index.test.ts
+```
+
+### iOS (XCTest)
+
+In Xcode: **⌘U** or **Product → Test**
+
+---
+
+## Troubleshooting
+
+**Supabase won't start** — Ensure Docker Desktop is running. Try `supabase stop` then `supabase start`.
+
+**Streaming not working** — Ensure Edge Functions are running: `supabase functions serve --env-file .env --no-verify-jwt`. Check Gemini API key is set in `.env`. Look at terminal output for errors.
+
+**iOS build fails** — Ensure Supabase package is added. Check iOS deployment target is 16.0+. Clean build folder: ⇧⌘K.
+
+**Auth fails** — Email confirmation is disabled by default for local dev. Check `backend/supabase/config.toml` settings.
+
+---
+
+
+
+
