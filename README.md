@@ -2,6 +2,10 @@
 
 A complete demo of NeverGone featuring a SwiftUI iOS app, Supabase backend with Edge Functions and Postgres, real-time streaming via SSE, email/password authentication, and long-term memory capture.
 
+## Demo
+
+[![Watch Demo](https://img.youtube.com/vi/qV8aeACZUmI/maxresdefault.jpg)](https://www.youtube.com/watch?v=qV8aeACZUmI)
+
 ---
 
 ## Repository Structure
