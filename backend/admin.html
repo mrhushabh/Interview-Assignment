@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeverGone Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .subtitle {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .config-bar {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .config-bar label {
+      font-size: 12px;
+      color: #888;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .config-bar input {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      padding: 8px 12px;
+      font-size: 13px;
+      width: 320px;
+    }
+    .config-bar button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .config-bar button:hover { background: #1d4ed8; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 0;
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .tab:hover { color: #ccc; }
+    .tab.active {
+      color: #fff;
+      border-bottom-color: #2563eb;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #333;
+      color: #888;
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f1f1f;
+      color: #ccc;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    tr:hover td { background: #1f1f1f; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-active { background: #064e3b; color: #34d399; }
+    .badge-inactive { background: #1f1f1f; color: #666; }
+    .badge-user { background: #1e1b4b; color: #818cf8; }
+    .badge-assistant { background: #1c1917; color: #fb923c; }
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: #555;
+      font-size: 14px;
+    }
+    .stat-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+      flex: 1;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .prompt-content {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #bbb;
+      white-space: pre-wrap;
+      margin-top: 8px;
+    }
+    .action-btn {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #ccc;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { background: #252525; border-color: #555; }
+    .action-btn.primary { background: #2563eb; border-color: #2563eb; color: white; }
+    .action-btn.primary:hover { background: #1d4ed8; }
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: start;
+    }
+    .form-row input, .form-row textarea {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .form-row input { flex: 1; }
+    .form-row textarea { flex: 3; min-height: 80px; resize: vertical; }
+    .status-msg {
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .status-msg.success { display: block; background: #064e3b; color: #34d399; }
+    .status-msg.error { display: block; background: #450a0a; color: #fca5a5; }
+    .time { font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+
+  <h1>🧠 NeverGone Admin</h1>
+  <p class="subtitle">Local admin dashboard — manage prompts, view users, sessions, and memories</p>
+
+  <!-- Connection Config -->
+  <div class="config-bar">
+    <div>
+      <label>Supabase URL</label>
+      <input type="text" id="supabaseUrl" value="http://127.0.0.1:54321">
+    </div>
+    <div>
+      <label>Service Role Key (Secret)</label>
+      <input type="password" id="serviceKey" placeholder="sb_secret_...">
+    </div>
+    <button onclick="connect()">Connect</button>
+  </div>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" onclick="switchTab('prompts')">Prompts</button>
+    <button class="tab" onclick="switchTab('users')">Users</button>
+    <button class="tab" onclick="switchTab('sessions')">Sessions</button>
+    <button class="tab" onclick="switchTab('memories')">Memories</button>
+  </div>
+
+  <!-- Overview Panel -->
+  <div id="panel-overview" class="panel active">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-users">-</div>
+        <div class="stat-label">Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-sessions">-</div>
+        <div class="stat-label">Chat Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-messages">-</div>
+        <div class="stat-label">Messages</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-memories">-</div>
+        <div class="stat-label">Memories</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-prompts">-</div>
+        <div class="stat-label">Prompt Versions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompts Panel -->
+  <div id="panel-prompts" class="panel">
+    <div class="card">
+      <h3>Create New Prompt Version</h3>
+      <div class="form-row">
+        <input type="text" id="promptName" placeholder="Name (e.g. Empathetic v2)">
+      </div>
+      <div class="form-row">
+        <textarea id="promptContent" placeholder="System prompt content..."></textarea>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="action-btn primary" onclick="createPrompt()">Create & Activate</button>
+        <span style="font-size: 12px; color: #666;">This will deactivate the current prompt and activate the new one.</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>All Prompt Versions</h3>
+      <div id="prompts-table"></div>
+    </div>
+  </div>
+
+  <!-- Users Panel -->
+  <div id="panel-users" class="panel">
+    <div class="card">
+      <h3>Registered Users</h3>
+      <div id="users-table"></div>
+    </div>
+  </div>
+
+  <!-- Sessions Panel -->
+  <div id="panel-sessions" class="panel">
+    <div class="card">
+      <h3>All Chat Sessions</h3>
+      <div id="sessions-table"></div>
+    </div>
+  </div>
+
+  <!-- Memories Panel -->
+  <div id="panel-memories" class="panel">
+    <div class="card">
+      <h3>Saved Memories</h3>
+      <div id="memories-table"></div>
+    </div>
+  </div>
+
+<script>
+  let db = null;
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg ' + type;
+    if (type === 'success') setTimeout(() => { el.className = 'status-msg'; }, 3000);
+  }
+
+  async function connect() {
+    const url = document.getElementById('supabaseUrl').value.trim();
+    const key = document.getElementById('serviceKey').value.trim();
+
+    if (!url || !key) {
+      showStatus('Please enter both Supabase URL and Service Role Key', 'error');
+      return;
+    }
+
+    try {
+      db = window.supabase.createClient(url, key);
+      // Test connection by fetching prompt_versions
+      const { data, error } = await db.from('prompt_versions').select('id').limit(1);
+      if (error) throw error;
+      showStatus('Connected to Supabase ✓', 'success');
+      loadAll();
+    } catch (e) {
+      showStatus('Connection failed: ' + e.message, 'error');
+      db = null;
+    }
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function formatTime(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function truncate(str, len = 80) {
+    if (!str) return '-';
+    return str.length > len ? str.slice(0, len) + '…' : str;
+  }
+
+  // ── Load all data ──
+
+  async function loadAll() {
+    if (!db) return;
+    await Promise.all([loadOverview(), loadPrompts(), loadUsers(), loadSessions(), loadMemories()]);
+  }
+
+  async function loadOverview() {
+    const [profiles, sessions, messages, memories, prompts] = await Promise.all([
+      db.from('profiles').select('id', { count: 'exact', head: true }),
+      db.from('chat_sessions').select('id', { count: 'exact', head: true }),
+      db.from('chat_messages').select('id', { count: 'exact', head: true }),
+      db.from('memories').select('id', { count: 'exact', head: true }),
+      db.from('prompt_versions').select('id', { count: 'exact', head: true }),
+    ]);
+
+    document.getElementById('stat-users').textContent = profiles.count ?? 0;
+    document.getElementById('stat-sessions').textContent = sessions.count ?? 0;
+    document.getElementById('stat-messages').textContent = messages.count ?? 0;
+    document.getElementById('stat-memories').textContent = memories.count ?? 0;
+    document.getElementById('stat-prompts').textContent = prompts.count ?? 0;
+  }
+
+  // ── Prompts ──
+
+  async function loadPrompts() {
+    const { data, error } = await db
+      .from('prompt_versions')
+      .select('*')
+      .order('version', { ascending: false });
+
+    if (error || !data?.length) {
+      document.getElementById('prompts-table').innerHTML = '<div class="empty">No prompts found</div>';
+      return;
+    }
+
+    let html = '<table><tr><th>Ver</th><th>Name</th><th>Status</th><th>Created</th><th>Actions</th></tr>';
+    for (const p of data) {
+      html += `<tr>
+        <td><strong>v${p.version}</strong></td>
+        <td>${p.name}</td>
+        <td><span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+        <td class="time">${formatTime(p.created_at)}</td>
+        <td>${p.is_active ? '' : `<button class="action-btn" onclick="activatePrompt('${p.id}')">Activate</button>`}</td>
+      </tr>
+      <tr><td colspan="5"><div class="prompt-content">${p.content}</div></td></tr>`;
+    }
+    html += '</table>';
+    document.getElementById('prompts-table').innerHTML = html;
+  }
+
+  async function activatePrompt(id) {
+    // Deactivate all
+    await db.from('prompt_versions').update({ is_active: false }).eq('is_active', true);
+    // Activate selected
+    await db.from('prompt_versions').update({ is_active: true }).eq('id', id);
+    showStatus('Prompt activated ✓', 'success');
+    loadPrompts();
+  }
+
+  async function createPrompt() {
+    const name = document.getElementById('promptName').value.trim();
+    const content = document.getElementById('promptContent').value.trim();
+
+    if (!name || !content) {
+      showStatus('Please enter both name and content', 'error');
+      return;
+    }
+
+    // Get next version number
+    const { data: latest } = await db
+      .from('prompt_versions')
+      .select('version')
+      .order('version', { ascending: false })
+      .limit(1);
+
+    const nextVersion = (latest?.[0]?.version ?? 0) + 1;
+
+    // Deactivate current
+    await db.from('prompt_versions').update({ is_active: false }).eq('is_active', true);
+
+    // Insert new
+    const { error } = await db.from('prompt_versions').insert({
+      version: nextVersion,
+      name,
+      content,
+      is_active: true,
+    });
+
+    if (error) {
+      showStatus('Failed to create prompt: ' + error.message, 'error');
+      return;
+    }
+
+    document.getElementById('promptName').value = '';
+    document.getElementById('promptContent').value = '';
+    showStatus(`Prompt v${nextVersion} created and activated ✓`, 'success');
+    loadPrompts();
+    loadOverview();
+  }
+
+  // ── Users ──
+
+  async function loadUsers() {
+    const { data, error } = await db
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data?.length) {
+      document.getElementById('users-table').innerHTML = '<div class="empty">No users found</div>';
+      return;
+    }
+
+    let html = '<table><tr><th>Email</th><th>User ID</th><th>Joined</th></tr>';
+    for (const u of data) {
+      html += `<tr>
+        <td>${u.email || '-'}</td>
+        <td style="font-family: monospace; font-size: 11px;">${u.id}</td>
+        <td class="time">${formatTime(u.created_at)}</td>
+      </tr>`;
+    }
+    html += '</table>';
+    document.getElementById('users-table').innerHTML = html;
+  }
+
+  // ── Sessions ──
+
+  async function loadSessions() {
+    // Load sessions and profiles separately (no direct FK between them for PostgREST join)
+    const [sessionsRes, profilesRes] = await Promise.all([
+      db.from('chat_sessions').select('*').order('updated_at', { ascending: false }),
+      db.from('profiles').select('id, email'),
+    ]);
+
+    const data = sessionsRes.data;
+    if (sessionsRes.error || !data?.length) {
+      document.getElementById('sessions-table').innerHTML = '<div class="empty">No sessions found</div>';
+      return;
+    }
+
+    // Build a user_id → email lookup
+    const emailMap = {};
+    (profilesRes.data || []).forEach(p => { emailMap[p.id] = p.email; });
+
+    let html = '<table><tr><th>Title</th><th>User</th><th>Session ID</th><th>Last Active</th></tr>';
+    for (const s of data) {
+      html += `<tr>
+        <td>${s.title || 'Untitled'}</td>
+        <td>${emailMap[s.user_id] || s.user_id}</td>
+        <td style="font-family: monospace; font-size: 11px;">${s.id}</td>
+        <td class="time">${formatTime(s.updated_at)}</td>
+      </tr>`;
+    }
+    html += '</table>';
+    document.getElementById('sessions-table').innerHTML = html;
+  }
+
+  // ── Memories ──
+
+  async function loadMemories() {
+    // Load memories, sessions, and profiles separately
+    const [memoriesRes, sessionsRes, profilesRes] = await Promise.all([
+      db.from('memories').select('*').order('created_at', { ascending: false }),
+      db.from('chat_sessions').select('id, title'),
+      db.from('profiles').select('id, email'),
+    ]);
+
+    const data = memoriesRes.data;
+    if (memoriesRes.error || !data?.length) {
+      document.getElementById('memories-table').innerHTML = '<div class="empty">No memories saved yet</div>';
+      return;
+    }
+
+    // Build lookups
+    const sessionMap = {};
+    (sessionsRes.data || []).forEach(s => { sessionMap[s.id] = s.title; });
+    const emailMap = {};
+    (profilesRes.data || []).forEach(p => { emailMap[p.id] = p.email; });
+
+    let html = '<table><tr><th>Session</th><th>User</th><th>Summary</th><th>Created</th></tr>';
+    for (const m of data) {
+      html += `<tr>
+        <td>${sessionMap[m.session_id] || 'Untitled'}</td>
+        <td>${emailMap[m.user_id] || m.user_id}</td>
+        <td title="${m.summary}">${truncate(m.summary, 100)}</td>
+        <td class="time">${formatTime(m.created_at)}</td>
+      </tr>`;
+    }
+    html += '</table>';
+    document.getElementById('memories-table').innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
