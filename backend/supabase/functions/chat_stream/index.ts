@@ -25,7 +25,8 @@ interface ChatRequest {
 
 async function streamGeminiResponse(
   message: string,
-  conversationHistory: Array<{ role: string; content: string }>
+  conversationHistory: Array<{ role: string; content: string }>,
+  systemPrompt?: string
 ): Promise<ReadableStream<Uint8Array>> {
 
   const contents = conversationHistory.map((msg) => ({
@@ -39,18 +40,27 @@ async function streamGeminiResponse(
     parts: [{ text: message }],
   });
 
+  // Build request body — include system instruction if a prompt version is active
+  const requestBody: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+    },
+  };
+
+  if (systemPrompt) {
+    requestBody.systemInstruction = {
+      parts: [{ text: systemPrompt }],
+    };
+  }
+
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}&alt=sse`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-      },
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -185,7 +195,20 @@ Deno.serve(async (req) => {
 
     const conversationHistory = history || [];
 
-    // 6. STREAM RESPONSE FROM GEMINI
+    // 6. FETCH ACTIVE SYSTEM PROMPT 
+
+    let systemPrompt: string | undefined;
+    const { data: promptData } = await supabaseClient
+      .from("prompt_versions")
+      .select("content")
+      .eq("is_active", true)
+      .single();
+
+    if (promptData?.content) {
+      systemPrompt = promptData.content;
+    }
+
+    // 7. STREAM RESPONSE FROM GEMINI
  
     const encoder = new TextEncoder();
     let fullResponse = "";
@@ -193,8 +216,8 @@ Deno.serve(async (req) => {
     const responseStream = new ReadableStream({
       async start(controller) {
         try {
-          // Get streaming response from Gemini
-          const geminiStream = await streamGeminiResponse(message, conversationHistory);
+          // Get streaming response from Gemini (with system prompt from DB)
+          const geminiStream = await streamGeminiResponse(message, conversationHistory, systemPrompt);
 
           // Parse and forward each chunk
           for await (const chunk of parseGeminiStream(geminiStream)) {
@@ -205,7 +228,7 @@ Deno.serve(async (req) => {
           }
 
 
-          // 7. SAVE ASSISTANT RESPONSE TO DATABASE
+          // 8. SAVE ASSISTANT RESPONSE TO DATABASE
           if (fullResponse.trim()) {
             const { error: assistantMsgError } = await supabaseClient
               .from("chat_messages")
